@@ -293,11 +293,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     textAlign: 'center',
-  },
-});
-
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
+  }
 });
