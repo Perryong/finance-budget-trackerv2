@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { supabase } from './src/lib/supabase';
 import { useAuthStore } from './src/store/authStore';
@@ -80,29 +80,79 @@ function AppStack() {
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user, setUser } = useAuthStore();
 
   useEffect(() => {
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    const initializeApp = async () => {
+      try {
+        console.log('Initializing app...');
+        
+        // Check for existing session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setError(`Session error: ${sessionError.message}`);
+        } else {
+          console.log('Session loaded:', session?.user?.id || 'No user');
+          setUser(session?.user ?? null);
+        }
+      } catch (err) {
+        console.error('App initialization error:', err);
+        setError(`Initialization error: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeApp();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id || 'No user');
         setUser(session?.user ?? null);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('Cleaning up auth subscription');
+      subscription.unsubscribe();
+    };
   }, [setUser]);
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' }}>
         <ActivityIndicator size="large" color="#3b82f6" />
+        <Text style={{ marginTop: 16, fontSize: 16, color: '#6b7280' }}>Loading Finance Tracker...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb', padding: 20 }}>
+        <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#ef4444', marginBottom: 16, textAlign: 'center' }}>
+          Something went wrong
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 20 }}>
+          {error}
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: '#3b82f6', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 }}
+          onPress={() => {
+            setError(null);
+            setIsLoading(true);
+            // Retry initialization
+            setTimeout(() => {
+              setIsLoading(false);
+            }, 1000);
+          }}
+        >
+          <Text style={{ color: 'white', fontWeight: '600' }}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }

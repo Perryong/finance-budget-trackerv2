@@ -3,6 +3,7 @@
     "name": "Finance Tracker",
     "slug": "finance-tracker-mobile",
     "version": "1.0.0",
+    "scheme": "finance-tracker",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -40,11 +41,19 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "extra": {
+      "eas": {
+        "projectId": "finance-tracker-mobile"
+      }
+    },
     "plugins": [
       "expo-camera",
       "expo-location",
       "expo-local-authentication",
       "expo-notifications"
-    ]
+    ],
+    "experiments": {
+      "tsconfigPaths": true
+    }
   }
 }
